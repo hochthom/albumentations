@@ -46,13 +46,14 @@ class PadIfNeeded(DualTransform):
     """
 
     def __init__(self, min_height=1024, min_width=1024, border_mode=cv2.BORDER_REFLECT_101,
-                 value=None, mask_value=None, always_apply=False, p=1.0):
+                 value=None, mask_value=None, always_apply=False, divisible_by=None, p=1.0):
         super(PadIfNeeded, self).__init__(always_apply, p)
         self.min_height = min_height
         self.min_width = min_width
         self.border_mode = border_mode
         self.value = value
         self.mask_value = mask_value
+        self.divisible_by = divisible_by
 
     def update_params(self, params, **kwargs):
         params = super(PadIfNeeded, self).update_params(params, **kwargs)
@@ -65,13 +66,23 @@ class PadIfNeeded(DualTransform):
         else:
             h_pad_top = 0
             h_pad_bottom = 0
-
+            if self.divisible_by is not None:
+                excess = rows % self.divisible_by
+                if excess > 0:
+                    h_pad_top = int((self.divisible_by - excess) / 2.0)
+                    h_pad_bottom = self.divisible_by - excess - h_pad_top
+            
         if cols < self.min_width:
             w_pad_left = int((self.min_width - cols) / 2.0)
             w_pad_right = self.min_width - cols - w_pad_left
         else:
             w_pad_left = 0
             w_pad_right = 0
+            if self.divisible_by is not None:
+                excess = cols % self.divisible_by
+                if excess > 0:
+                    w_pad_left = int((self.divisible_by - excess) / 2.0)
+                    w_pad_right = self.divisible_by - excess - w_pad_left
 
         params.update({'pad_top': h_pad_top,
                        'pad_bottom': h_pad_bottom,
